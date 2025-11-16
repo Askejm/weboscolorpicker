@@ -1,0 +1,14 @@
+{
+  "name": "webos-colorpicker",
+  "version": "1.0.0",
+  "description": "Displays solid contrasts for LG WebOS TVs",
+  "main": "index.html",
+  "scripts": {
+    "package": "ares-package .",
+    "install-device": "ares-install *.ipk -d <device-name>",
+    "launch": "ares-launch com.webos.colorpicker -d <device-name>"
+  },
+  "keywords": ["webos", "lg", "tv", "color", "picker"],
+  "author": "",
+  "license": "MIT"
+}
