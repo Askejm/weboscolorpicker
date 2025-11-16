@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Color Picker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            background-color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s ease;
+        }
+
+        #ui-panel {
+            position: fixed;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 30px 40px;
+            border-radius: 20px;
+            color: white;
+            text-align: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 1000;
+            min-width: 400px;
+        }
+
+        #ui-panel.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+            pointer-events: none;
+        }
+
+        #gray-value {
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        #gray-label {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            font-size: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+
+        #shortcuts {
+            font-size: 14px;
+            opacity: 0.6;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+
+        #toggle-hint {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 14px;
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+            z-index: 999;
+        }
+
+        #toggle-hint:hover {
+            opacity: 1;
+        }
+
+        .preset-colors {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 25px;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .preset-btn.active {
+            background: rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 255, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <div id="toggle-hint">Press SPACE to hide/show UI</div>
+
+    <div id="ui-panel">
+        <div id="gray-value">100%</div>
+        <div id="gray-label">Gray Level</div>
+
+        <div class="controls">
+            <button class="control-btn" id="decrease-btn" title="Decrease (Arrow Down)">−</button>
+            <button class="control-btn" id="increase-btn" title="Increase (Arrow Up)">+</button>
+        </div>
+
+        <div class="preset-colors">
+            <button class="preset-btn" data-value="0">Black (0%)</button>
+            <button class="preset-btn" data-value="25">Dark Gray (25%)</button>
+            <button class="preset-btn" data-value="50">Medium Gray (50%)</button>
+            <button class="preset-btn" data-value="75">Light Gray (75%)</button>
+            <button class="preset-btn active" data-value="100">White (100%)</button>
+        </div>
+
+        <div id="shortcuts">
+            ↑↓ Arrow Keys: Adjust by 1% | Page Up/Down: Adjust by 10% | H: Toggle UI
+        </div>
+    </div>
+
+    <script>
+        let grayLevel = 100; // Start at 100% (white)
+        let uiVisible = true;
+
+        const body = document.body;
+        const uiPanel = document.getElementById('ui-panel');
+        const grayValueDisplay = document.getElementById('gray-value');
+        const increaseBtn = document.getElementById('increase-btn');
+        const decreaseBtn = document.getElementById('decrease-btn');
+        const presetButtons = document.querySelectorAll('.preset-btn');
+
+        function updateGrayLevel(newLevel) {
+            grayLevel = Math.max(0, Math.min(100, newLevel));
+
+            // Convert percentage to RGB value (0-255)
+            const rgbValue = Math.round((grayLevel / 100) * 255);
+            const hexValue = rgbValue.toString(16).padStart(2, '0');
+            const color = `#${hexValue}${hexValue}${hexValue}`;
+
+            body.style.backgroundColor = color;
+            grayValueDisplay.textContent = `${grayLevel}%`;
+
+            // Update active preset button
+            presetButtons.forEach(btn => {
+                if (parseInt(btn.dataset.value) === grayLevel) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function toggleUI() {
+            uiVisible = !uiVisible;
+            if (uiVisible) {
+                uiPanel.classList.remove('hidden');
+            } else {
+                uiPanel.classList.add('hidden');
+            }
+        }
+
+        // Button click handlers
+        increaseBtn.addEventListener('click', () => updateGrayLevel(grayLevel + 1));
+        decreaseBtn.addEventListener('click', () => updateGrayLevel(grayLevel - 1));
+
+        // Preset button handlers
+        presetButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                updateGrayLevel(parseInt(btn.dataset.value));
+            });
+        });
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel + 1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel - 1);
+                    break;
+                case 'PageUp':
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel + 10);
+                    break;
+                case 'PageDown':
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel - 10);
+                    break;
+                case ' ':
+                case 'h':
+                case 'H':
+                    e.preventDefault();
+                    toggleUI();
+                    break;
+            }
+        });
+
+        // Remote control support for webOS
+        document.addEventListener('keydown', (e) => {
+            // webOS remote control keys
+            switch(e.keyCode) {
+                case 38: // Up
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel + 1);
+                    break;
+                case 40: // Down
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel - 1);
+                    break;
+                case 33: // Channel Up
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel + 10);
+                    break;
+                case 34: // Channel Down
+                    e.preventDefault();
+                    updateGrayLevel(grayLevel - 10);
+                    break;
+                case 13: // OK/Enter
+                    e.preventDefault();
+                    toggleUI();
+                    break;
+            }
+        });
+
+        // Initialize
+        updateGrayLevel(100);
+    </script>
+</body>
+</html>

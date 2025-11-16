@@ -1,0 +1,16 @@
+{
+  "id": "com.webos.colorpicker",
+  "version": "1.0.0",
+  "vendor": "WebOS Color Picker",
+  "type": "web",
+  "main": "index.html",
+  "title": "Color Picker",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "splashBackground": "splash-background.png",
+  "transparent": false,
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true,
+  "bgImage": "background.png",
+  "uiRevision": 2
+}
